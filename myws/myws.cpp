@@ -239,6 +239,11 @@ void run(SOCKET fd) {
 
 				respond(fd, requestMsg);
 			}
+			else {
+				//延迟一下，避免客户端突然断开造成cpu爆炸
+				//todo 以后加入心跳
+				Sleep(10);
+			}
 
 		}
 
@@ -284,11 +289,11 @@ int init() {
 		int clilen = sizeof(client_addr);
 		SOCKET fd = accept(listenfd_, (struct sockaddr*) & client_addr, &clilen);
 		if (fd == INVALID_SOCKET) {
-			std::cout << ("accept error!") << std::endl;
+			cout << ("accept error!") << endl;
 
 		}
 		else {
-			std::cout << ("准备握手!") << std::endl;
+			cout << ("ready handle!") << endl;
 			HANDLE hT = CreateThread(NULL, 0, (LPTHREAD_START_ROUTINE)run, (LPVOID)fd, 0, 0);
 			if (hT != NULL) {
 				CloseHandle(hT);
