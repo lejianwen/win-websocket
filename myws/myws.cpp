@@ -10,13 +10,14 @@
 #include "base64.h"
 #include "sha1.h"
 #include "websocket_request.h"
+#include <atlconv.h>
 #define PORT 9006
 #define TIMEWAIT 100
 #define BUFFLEN 2048
 #define MAXEVENTSSIZE 20
 #define MAGIC_KEY "258EAFA5-E914-47DA-95CA-C5AB0DC85B11"
 using namespace std;
-
+static SOCKET _fd[5];
 void respond2(SOCKET fd, char msg[]) {
 
 	byte bmsg[1024];
@@ -145,7 +146,19 @@ void respond(SOCKET fd, char* msg) {
 	send(fd, outMessage.data(), outMessage.length(), 0);*/
 
 }
-
+void respond(char* msg) {
+	if (!_fd[0]) {
+		return;
+	}
+	respond(_fd[0], msg);
+}
+void respond(wchar_t* msg) {
+	if (!_fd[0]) {
+		return;
+	}
+	USES_CONVERSION;
+	respond(W2A(msg));
+}
 char* getClinetInfo(SOCKET fd, char clientinfo[]) {
 	int point = 0;
 	int tmppoint = 0;
@@ -214,6 +227,11 @@ int handle(SOCKET fd) {
 			handleHeader(request, secWebSocketKeyString);
 			//响应握手
 			send(fd, request, strlen(request), 0);
+			//暂时只做一个链接
+			if (_fd[0]) {
+				closesocket(_fd[0]);
+			}
+			_fd[0] = fd;
 			result = 1;
 		}
 		else {
@@ -236,7 +254,6 @@ void run(SOCKET fd) {
 			int ret = recv(fd, clinetInfo, BUFFLEN, 0);
 			if (ret > 0) {
 				char* requestMsg = getClinetInfo(fd, clinetInfo);
-
 				respond(fd, requestMsg);
 			}
 			else {
